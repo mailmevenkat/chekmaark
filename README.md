@@ -23,6 +23,12 @@ We love to add support to all email accounts, but due to time constraint and con
 
 Our checklist included support for attachments, projects and user profiles. We weren't able to complete them, yet they are worth mentioning.
 
+#### Dashboard
+![Dashboard Screenshot](https://raw.githubusercontent.com/mailmevenkat/chekmaark/master/public/images/screenshot-1.jpg)
+
+#### Message
+![Message Screenshot](https://raw.githubusercontent.com/mailmevenkat/chekmaark/master/public/images/screenshot-2.jpg)
+
 #### To run:
 ```
 npm install
