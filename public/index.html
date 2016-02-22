@@ -2,7 +2,10 @@
 <html>
   <head>
       <title>Chekmaark: Manage tasks using Emails</title>
-      
+      <meta charset="utf-8">
+      <meta http-equiv="content-type" content="text/html">
+      <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
       <link rel="shortcut icon" type="image/x-icon" href="images/favicon.ico">
       
       <style>
@@ -15,6 +18,7 @@
       
       <!-- FONTS -->
       <link href='https://fonts.googleapis.com/css?family=Poiret+One' rel='stylesheet' type='text/css'>
+      <link href='https://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
       <link href='https://fonts.googleapis.com/css?family=Satisfy' rel='stylesheet' type='text/css'>
       
       <!-- JS -->
@@ -28,9 +32,10 @@
                 if(isAuthenticated) {
                     window.location = "dashboard.html";
                 }
+                console.log(isAuthenticated);
             };  
         </script>
-      <script src="https://apis.google.com/js/client.js?onload=authorize"> </script>
+      <script src="https://apis.google.com/js/client.js?onload=checkAuth"> </script>
   </head>
   <body>
       <div class="ui menu">
@@ -39,28 +44,57 @@
             </div>
       </div>
       <div class="ui padded text container segment">
-          <h3 class="ui header" style="font-family: 'Poiret One';">Chekmaark converts your Gmail into personal and team task manager.</h3>
+          <h2 class="ui header" style="font-family: 'Open Sans';">Chekmaark converts your Gmail account into a personal and team task manager.</h2>
           <div class="ui divider"></div>
           <div class="ui inverted list">
               <div class="item">
-                <i class="checkmark box icon"></i> Manage Tasks - Create, Delegate and Complete
+                <i class="checkmark box icon"></i> Manage Tasks - Create, Delegate and Accomplish.
               </div>
               <div class="item">
-                <i class="checkmark box icon"></i> Emails as short and cripsy conversations
+                <i class="checkmark box icon"></i> No more clumpsy reply threads, send and view email the way you text.
               </div>
               <div class="item">
-                <i class="checkmark box icon"></i> A Personal To-do list
+                <i class="checkmark box icon"></i> Keep track of simple tasks with built-in personal todo list.
               </div>
-            </div>
+           </div>
           <form class="ui form">
-          <button class="ui animated button red basic fluid" tabindex="0" onclick="performAuth(event)">
+          <button style="height: 60px" class="ui animated button pink fluid" tabindex="0" onclick="performAuth(event)">
               <div class="visible content">Sign in with Gmail</div>
               <div class="hidden content">
                 <i class="right arrow icon"></i>
               </div>
            </button>
           </form>
-          <h2 class = "ui header" style="font-family: 'Satisfy', cursive;">by <a target="_blank" href = "https://groufye.com" >groufye</a></h2>
+          <h2>What's so exiciting?</h2>
+          <div class="ui inverted list">
+              <div class="item">
+                  > Why not Asana?<br><br>
+                 <b>Asana </b>is cool, yet we need each and every member of the team to own an account in asana.
+              </div>  
+              <div class="item"><br>
+                  > Why we used GMAIL API?<br><br>
+                    We would love to support all email accounts through IMAP, but due to limited time constraint and considering security we choose GMAIL API.
+              </div>
+              <div class="item"><br>
+                 <h2>Tech Stack</h2>
+                <div class="ui list">
+                    <div class="item">
+                        <i class="checkmark icon"></i> Gmail Api client for JS
+                    </div>
+                    <div class="item">
+                        <i class="checkmark icon"></i> Parse Open Source Server for backend.
+                    </div>
+                    <div class="item">
+                        <i class="checkmark icon"></i> Semantic UI and jQuery for frontend.
+                    </div>    
+                </div>
+              </div>
+           </div>
+          <div class="item"><br>
+             <h4 class="ui header">If we are about to work on this again, we would be pleased to add support for attachments, projects and user profiles.</h4>
+              
+          </div><br>
+          <div style="font-family: 'Satisfy', cursive; font-size: 2rem; text-align:right; width: 100%;">with <i class = "heart red icon"></i><a target="_blank" href = "https://groufye.com" >groufye</a></div>
       </div>
   </body>
 </html>

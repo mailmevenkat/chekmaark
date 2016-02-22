@@ -1,6 +1,10 @@
 <!Doctype html>
 <html>
   <head>
+      <meta charset="utf-8">
+      <meta http-equiv="content-type" content="text/html">
+      <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
       <title>Chekmaark: Manage tasks using Emails</title>
       <link rel="shortcut icon" type="image/x-icon" href="images/favicon.ico">
       
@@ -11,6 +15,7 @@
           body, html {
               height: auto;
           }
+          
         .chat {
             width: 100%;
         }
@@ -71,9 +76,14 @@
         .you::before {
             right: -6px;
         }
-      .gmail_extra {
-          display: none;
-      }
+          .gmail_extra {
+              display: none;
+          }
+          @media only screen and (max-width: 600px) {
+              .bubble {
+                  width: 90%;
+              }
+	      }
       </style>
       
       <!-- FONTS -->
@@ -151,6 +161,7 @@
                                             $("#tasky").css("display", "flex");
                                             $("#holder").css("marginTop", "70px");
                                             replySubject += subject;
+                                            document.title = "ChekMaark: Message: " + subject.replace("#CMK" + parseTaskIdFromSubject(subject), "");
                                             $("#title").html(subject.replace("#CMK" + parseTaskIdFromSubject(subject), ""));
                                             $("#desc").html(body);
                                             $("#assigned-to").html(to);
@@ -204,6 +215,7 @@
                                         if(j == 0) { 
                                             $("#tasky").css("display", "block");
                                             $("#holder").css("marginTop", "0px");
+                                            document.title = "ChekMaark: Message: " + subject;
                                             replySubject += subject;
                                             $("#title").html(subject);
                                             $("#compact").remove();
@@ -215,7 +227,7 @@
                                         if(to) {
                                             deliveredTo = to;
                                         }
-                                        conversations.append('<div class="bubble ' + meOrYou + '"> <div class="ui basic segment"><a class="ui label">to: <span class="detail">' + escapeHtml(deliveredTo) + '</span></a> <article class="content" style= "margin-top: 5px; border-top:1px solid #ddd; overflow: auto; max-width: 100%; box-shadow: 0px 0px 5px #ddd inset; padding: 5px; max-height: 350px;">' + body + '</article><p style="color: #aaa; font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px #f1f1f1 solid;"><span class = "ui label">from: <span class="detail">' + from + '</span></span> | ' + date + ' | <a id="delete" class="ui tiny red label" data-message="'+ id +'">Trash</a></p><p style="color: #aaa; font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px #f1f1f1 solid;">' + cc + '</p>');
+                                        conversations.append('<div class="bubble ' + meOrYou + '"> <div class="ui basic segment"><a class="ui label">to: <span class="detail" style="word-break: break-all">' + escapeHtml(deliveredTo) + '</span></a> <article class="content" style= "margin-top: 5px; border-top:1px solid #ddd; overflow: auto; max-width: 100%; box-shadow: 0px 0px 5px #ddd inset; padding: 5px; max-height: 350px;">' + body + '</article><p style="color: #aaa; font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px #f1f1f1 solid;"><span class = "ui label" style="word-break: break-all">from: <span class="detail">' + from + '</span></span> | ' + date + ' | <a id="delete" class="ui tiny red label" data-message="'+ id +'">Trash</a></p><p style="color: #aaa; font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px #f1f1f1 solid;">' + cc + '</p>');
                                    }
                                    
                                    if(j == response.messages.length - 1) {
@@ -245,7 +257,7 @@
                                 replyMessage(email, thread_id, function(response) {
                                     var id = response.id;
                                     if(response.hasOwnProperty("threadId")) {
-                                        conversations.append('<div class="bubble me"> <div class="ui basic segment"><a class="ui label">to: <span class="details">' + replyTo + '</span></a> <article class="content" style= "margin-top: 5px; border-top:1px solid #ddd; overflow: auto; max-width: 100%; box-shadow: 0px 0px 5px #ddd inset; padding: 5px; max-height: 350px;">' + message + '</article><p style="color: #aaa; font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px #f1f1f1 solid;"><span class="ui label">from: <span class="details">' + selfEmail + '</span></span> | ' + new Date().toDateString() + ' | <a id="delete" class="ui tiny red label" data-message="'+ id +'">Trash</a></p><p style="color: #aaa; font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px #f1f1f1 solid;">' + replyCc + '</p>');
+                                        conversations.append('<div class="bubble me"> <div class="ui basic segment"><a class="ui label">to: <span class="details" style="word-break: break-all">' + replyTo + '</span></a> <article class="content" style= "margin-top: 5px; border-top:1px solid #ddd; overflow: auto; max-width: 100%; box-shadow: 0px 0px 5px #ddd inset; padding: 5px; max-height: 350px;">' + message + '</article><p style="color: #aaa; font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px #f1f1f1 solid;"><span class="ui label" style="word-break: break-all">from: <span class="details">' + selfEmail + '</span></span> | ' + new Date().toDateString() + ' | <a id="delete" class="ui tiny red label" data-message="'+ id +'">Trash</a></p><p style="color: #aaa; font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px #f1f1f1 solid;">' + replyCc + '</p>');
                                         $("#message").val("");
                                     }
                                 });
@@ -369,7 +381,7 @@
       </div>
       <div id = "holder" class="ui basic segment" style="margin-top: 70px; width: 80%; margin-left: 10%;">
           <div id="tasky" class="ui rail task" style="display: none;">
-              <div id="tasky-segment" class = "ui blue raised fixed top sticky segment" style="margin-top: 70px; overflow: hidden;">
+              <div id="tasky-segment" class = "ui blue raised fixed top sticky segment" style="margin-top: 70px; overflow: hidden; max-width: 550px;">
                   <div class="content">
                     <a id="compact" data-compact=true class= "ui link" style="cursor: pointer;"><i class="angle down icon"></i> Expand</a>
                     <h3 class="ui header" id = "title"></h3>

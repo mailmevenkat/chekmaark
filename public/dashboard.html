@@ -1,13 +1,23 @@
 <!Doctype html>
 <html>
   <head>
-      <title>Chekmaark: Manage tasks using Emails</title>
+      <meta charset="utf-8">
+      <meta http-equiv="content-type" content="text/html">
+      <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+      
+       <title>Chekmaark: Manage tasks using Emails</title>
       <link rel="shortcut icon" type="image/x-icon" href="images/favicon.ico">
       <!-- CSS -->
       <link rel="stylesheet" type="text/css" href="semantic/dist/semantic.min.css">
       <style>
         body, html {
               height: auto;
+        }
+        
+        @media only screen and (max-width: 600px) {
+          .mobile-hide {
+              display: none !important;
+          }
         }
       </style>
       <!-- FONTS -->
@@ -79,7 +89,7 @@
                     // Task helper function
                     function taskListData(threadId, status_type, subject, snippet, favorite, duedate, fromUname, toUname, status_icon, favorite_color, status_completed_color, objectid, status_completed) {
                         var setFav = favorite? "statusFavorite": "";
-                        return '<div class="ui blue card ' + setFav + '" data-thread="' + threadId + '" id = "status' + status_type + '" style="cursor: pointer;"> <div class="content"><div class="header">' + subject + '</div><div class="meta"><span class="right floated time">' + duedate +'</span></div><div class="description"><p>' + snippet + '</p></div></div><div class="extra content"><div class="meta"><span class="category" style="padding: 5px;">Assigned to <span class="ui small basic label" style= "margin: 10px;">' + toUname + '</span></span><br><span class="category" style="padding: 5px;">Assigned by <span class="ui small basic label">' + fromUname + '</span></span></div></div><div class="extra content"><span class="left floated" id="statusShow"><i class="' + status_icon + ' icon"></i>' + status_type + '</span><span class="right floated"><i class="star ' + favorite_color + ' icon" id="favorite" data-thread=' + threadId + ' data-fav=' + favorite + '></i></span></div><div class="ui bottom attached ' + status_completed_color + ' button" id="complete"  data-thread=' + threadId + ' data-object= ' + objectid + '><i class="checkmark icon"></i>' + status_completed + '</div></div>'
+                        return '<div class="ui blue card ' + setFav + '" data-thread="' + threadId + '" id = "status' + status_type + '" style="cursor: pointer;"> <div class="content"><div class="header">' + subject + '</div><div class="meta"><span class="right floated time">' + duedate +'</span></div><div class="description"><p>' + snippet + '</p></div></div><div class="extra content"><div class="meta"><span class="category" style="padding: 5px;">Assigned to <span class="ui small basic label" style= "margin: 10px;word-break: break-all;">' + toUname + '</span></span><br><span class="category" style="padding: 5px;">Assigned by <span class="ui small basic label" style="word-break: break-all;">' + fromUname + '</span></span></div></div><div class="extra content"><span class="left floated" id="statusShow"><i class="' + status_icon + ' icon"></i>' + status_type + '</span><span class="right floated"><i class="star ' + favorite_color + ' icon" id="favorite" data-thread=' + threadId + ' data-fav=' + favorite + '></i></span></div><div class="ui bottom attached ' + status_completed_color + ' button" id="complete"  data-thread=' + threadId + ' data-object= ' + objectid + '><i class="checkmark icon"></i>' + status_completed + '</div></div>'
                     }
                     
                     // Add new task
@@ -126,6 +136,7 @@
                                     }
                                     createTask(date, function(object) {
                                         subject = escapeHtml(subject);
+                                        subject = subject.substring(0, subject.length < 54? subject.length: 54);
                                         var email = makeEmail(selfEmail, to, cc, subject + " #CMK" + object.id, message);
                                         sendMessage(email, function(response) {
                                             var threadId = response.threadId;
@@ -315,7 +326,7 @@
                                                         } else {
                                                                $("#placeHolderConvo").css("display", "none");
                                                                convoList.append(
-                                                               '<a href = "message.html?' + message.threadId + '" class="item"> <div class="content"> <div class = "header"><div style="width: 50px; height: 50px; border-radius: 50%; border: 2px red solid; color: red; line-height: 50px; text-align: center;float: left;">' + fromFirst + '</div><div style="width: calc(100% - 80px); margin-left: 10px; float: left; overflow: hidden;"><h4 class="ui header" style="height: 30px; line-height: 30px; width: 100%; overflow: hidden">' + fromUname + ': ' + subject + '</h4><p style="height: 20px; line-height: 20px; color: #ccc; font-size: 13px; font-weight: normal; width: 100%; overflow: hidden">' + snippet + '</p></div><div style="width: 20px; float: left;"><i class="angle right icon" style="height: 50px; line-height: 50px;"></i></div></div></div></a>');
+                                                               '<a href = "message.html?' + message.threadId + '" class="item"> <div class="content"> <div class = "header"><div style="width: 50px; height: 50px; border-radius: 50%; border: 2px red solid; color: red; line-height: 50px; text-align: center;float: left;">' + fromFirst.toUpperCase() + '</div><div style="width: calc(100% - 80px); margin-left: 10px; float: left; overflow: hidden;"><h4 class="ui header" style="height: 30px; line-height: 30px; width: 100%; overflow: hidden">' + fromUname + ': ' + subject + '</h4><p style="height: 20px; line-height: 20px; color: #ccc; font-size: 13px; font-weight: normal; width: 100%; overflow: hidden">' + snippet + '</p></div><div style="width: 20px; float: left;"><i class="angle right icon" style="height: 50px; line-height: 50px;"></i></div></div></div></a>');
                                                            }
                                                            break; //Execute only once
                                                        }
@@ -474,15 +485,22 @@
                      if(key == 13)  // the enter key code
                       {
                           var value = $("#todoAdd").val();
-                          addToTodo(todo);
+                          var index = addToTodo(value);
+                            $("#todoList").prepend('<div class="ui label" style="margin-bottom: 5px; padding: 10px;"><i  id ="removeTodo" class="close white icon" data-index="' + index + '"></i> <div class = "detail">' + value + '</div></div>');
                           $("#todoAdd").val("");
                       }
                     }); 
                     
+                    $(document.body).on("click", "#removeTodo", function(event) {
+                        var index = $(this).data("index");
+                        removeFromTodo(index);
+                        $(this).parent().remove();
+                    });
+                    
                     if(getTodo()) {
                         var todo = JSON.parse(getTodo());
                         for(var i = 0; i < todo.length; i++) {
-                            $("#todoList").prepend('<div class="ui label" style="margin-bottom: 5px; padding: 10px;"><i class="close white icon"></i> <div class = "detail">' + Fix the Bug! + '</div></div>');
+                            $("#todoList").prepend('<div class="ui label" style="margin-bottom: 5px; padding: 10px;"><i id ="removeTodo" class="close white icon" data-index="' + i + '"></i> <div class = "detail">' + todo[i] + '</div></div>');
                         }
                     }
                     
@@ -500,16 +518,16 @@
             <a class="item"  id = "addNewTask">
               <i class="add icon"></i>
             </a>
-            <div class="item">
+            <div class="item mobile-hide">
                 <div id="infinite" class="ui toggle checkbox">
                   <input type="checkbox" tabindex="0" class="hidden">
-                  <label>Load more on scroll</label>
+                  <label style="font-size: 11px;">Load more (infinite scroll)</label>
                 </div>
             </div>
             <a class="right item"  onclick="$('#todo').sidebar('toggle');">
                 <h3 class = "ui header" style="font-family: 'Poiret One', cursive;">Todo</h3>
             </a>
-            <a class="item"  target="_blank" href = "https://groufye.com" >
+            <a class="item mobile-hide"  target="_blank" href = "https://groufye.com" >
                 <h3 class = "ui header" style="font-family: 'Satisfy', cursive;">by groufye</h3>
             </a>
       </div>
@@ -560,21 +578,10 @@
       <div id = "todo" class="ui right sidebar inverted vertical menu">
           <div class="ui container" style="padding-top: 70px; padding-left: 20px; padding-right: 20px;">
             <div class="ui form">
-                <input id="todoAdd" type="text" placeholder="Enter todo"></input> 
+                <input id="todoAdd" type="text" placeholder="New todo"></input> 
             </div>
-            <div id = "todoList" class="ui medium fluid blue labels">
-                <div class="ui label" style="margin-bottom: 5px; padding: 10px;">
-                  <i class="close white icon"></i> <div class = "detail">Fix the Bug!</div>
-                </div>
-                <div class="ui label" style="margin-bottom: 5px; padding: 10px;">
-                  <i class="close white icon"></i> <div class = "detail">Fix the Bug!</div>
-                </div>
-                <div class="ui label" style="margin-bottom: 5px; padding: 10px;">
-                  <i class="close white icon"></i> <div class = "detail">Fix the Bug!</div>
-                </div>
-                <div class="ui label" style="margin-bottom: 5px; padding: 10px;">
-                  <i class="close white icon"></i> <div class = "detail">Fix the Bug!</div>
-                </div>
+            <div id = "todoList" class="ui medium fluid blue labels" style="margin-top:10px;">
+                
             </div>
           </div>
       </div>
@@ -582,7 +589,7 @@
           <div id="top" class="ui padded text container"  style="margin-top: 70px;">
                   <div id = "mainContainer" class="ui basic segment">
                   <h2 class="ui header">Tasks</h2>
-                  <div class="ui floating labeled icon dropdown button" id = "filterTask">
+                  <div class="ui floating labeled icon dropdown button" id = "filterTask" style="margin-bottom: 10px;">
                       <i class="filter icon"></i>
                       <span class="text">Filter</span>
                       <div class="menu">
@@ -607,7 +614,7 @@
                       <span style="color: #aaa">No tasks! Seems like someone has time for vacation!</span>
                   </div>
 
-                  <div id="taskList" class="ui two cards">
+                  <div id="taskList" class="ui two stackable cards">
 
                   </div>
                   <h2 class="ui header">Conversations</h2>
@@ -617,7 +624,7 @@
                   <div id="convoList" class="ui relaxed divided list">
 
                   </div>
-                      <button id="load-more" class="ui blue basic button">
+                      <button id="load-more" class="ui blue basic button" style="margin-bottom: 10px;">
                           Load more
                       </button>
                   <div style="width: 100%; height: 100px; text-align: center;">

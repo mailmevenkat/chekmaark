@@ -42,7 +42,7 @@ function saveTodo(list) {
 }
 
 function getTodo() {
-    return localStorage.getItem("todo", list);
+    return localStorage.getItem("todo");
 }
 
 function addToTodo(value) {
@@ -52,12 +52,12 @@ function addToTodo(value) {
     }
     todo.push(value);
     saveTodo(JSON.stringify(todo));
+    return todo.length - 1;
 }
 
-function removeFromTodo(value) {
+function removeFromTodo(index) {
     if(getTodo()) {
         var todo = JSON.parse(getTodo());
-        var index = todo.indexOf(value);
         if (index > -1) {
             todo.splice(index, 1);
             saveTodo(JSON.stringify(todo));

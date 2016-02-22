@@ -1,8 +1,16 @@
 var AuthListener = null;
-
+var interval = null;
 /*
     GMAIL Authentication
 */
+function checkAuth() {
+      authorize(); 
+      interval = window.setInterval(
+        function(){
+            authorize(); 
+        }, 1500);
+}
+
 function authorize() {
   gapi.auth.authorize(
   {
@@ -12,25 +20,21 @@ function authorize() {
   }, handleAuth);
 }
 
-function handleAuth(authResult) {
-    if (authResult && !authResult.error) {
-        AuthListener(true, authResult);
-    } else {
-        AuthListener(false, authResult);
-    }
-}
-
 function performAuth(event) {
     gapi.auth.authorize(
       {client_id: CLIENT_ID, scope: SCOPES.join(' '), immediate: false}, handleAuth);
     return false;
 }
 
-function logout(event) {
-    gapi.auth.signOut();
-    return false;
+function handleAuth(authResult) {
+    if (authResult && !authResult.error) {
+        AuthListener(true, authResult);
+        if(interval)
+            clearInterval(interval)
+    } else {
+        AuthListener(false, authResult);
+    }
 }
-
 
 /*
     Required functions
@@ -199,8 +203,9 @@ function makeEmail(from, to, cc, subject, message) {
         email += 'To: ' + to + '\r\n';
     if(cc)
         email += 'Cc: ' + cc + '\r\n';
-    if(subject)
+    if(subject) {
         email += 'Subject: ' + subject + '\r\n';
+    }
     if(message) {
         email += '\r\n';
         email += message;
