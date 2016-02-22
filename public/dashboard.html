@@ -485,9 +485,11 @@
                      if(key == 13)  // the enter key code
                       {
                           var value = $("#todoAdd").val();
-                          var index = addToTodo(value);
-                            $("#todoList").prepend('<div class="ui label" style="margin-bottom: 5px; padding: 10px;"><i  id ="removeTodo" class="close white icon" data-index="' + index + '"></i> <div class = "detail">' + value + '</div></div>');
-                          $("#todoAdd").val("");
+			  if(value) {
+                          	var index = addToTodo(value);
+                          	$("#todoList").prepend('<div class="ui label" style="margin-bottom: 5px; padding: 10px;"><i  id ="removeTodo" class="close white icon" data-index="' + index + '"></i> <div class = "detail">' + value + '</div></div>');
+                          	$("#todoAdd").val("");
+			  }
                       }
                     }); 
                     

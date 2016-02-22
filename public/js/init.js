@@ -1,6 +1,6 @@
 // Initialize Parse
 Parse.initialize("chekmaark-1508");
-Parse.serverURL = 'http://localhost:1337/parse';
+Parse.serverURL = 'http://169.44.65.212:1337/parse';
 
 
 /*
