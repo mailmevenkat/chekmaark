@@ -36,8 +36,15 @@ function logout(event) {
     Required functions
 */
 
-//Todo: Store the nextPageToken to local cache
-
+// Profile - Get
+function getProfileFromServer(callback) {
+    gapi.client.load('gmail', 'v1', function() {
+      var request = gapi.client.gmail.users.getProfile({
+        'userId': USER_ID
+      });
+      request.execute(callback);
+    });
+}
 // Threads - List
 function listAllThreadsFromInbox(nextPageToken, callback) {
   gapi.client.load('gmail', 'v1', function() { //Loads all from inbox
@@ -93,12 +100,14 @@ function modifyThread(threadId, labelsToAdd, labelsToRemove, callback) {
   });
 }
 
-// Message - Get
-function getMessage(msgId, callback) {
+// Message - Modify
+function modifyMessage(msgId, labelsToAdd, labelsToRemove, callback) {
   gapi.client.load('gmail', 'v1', function() {
-      var request = gapi.client.gmail.users.messages.get({
+      var request = gapi.client.gmail.users.messages.modify({
         'userId': USER_ID,
-        'id': msgId
+        'id': msgId,
+        'addLabelIds': labelsToAdd,
+        'removeLabelIds': labelsToRemove
       });
       request.execute(callback);
   });
@@ -181,8 +190,11 @@ function listLabels(callback) {
 */
 
 // Make email
-function makeEmail(to, cc, subject, message) {
+function makeEmail(from, to, cc, subject, message) {
     var email = '';
+    if(from) {
+        email += 'From: ' + from + '\r\n';
+    }
     if(to)
         email += 'To: ' + to + '\r\n';
     if(cc)
@@ -257,3 +269,30 @@ function parseTaskIdFromSubject(subject) {
     }
     return false;
 }
+
+// Validator - Check if email is valid
+function isValidEmailAddresses(emailAddresses) {
+    for(var i = 0; i < emailAddresses.length; i++) {
+        var email = emailAddresses[i].trim();
+        console.log(email, isValidEmailAddress(email));
+        if(!isValidEmailAddress(email)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function isValidEmailAddress(emailAddress) {
+    var pattern = /^([a-z\d!#$%&'*+\-\/=?^_`{|}~\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]+(\.[a-z\d!#$%&'*+\-\/=?^_`{|}~\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]+)*|"((([ \t]*\r\n)?[ \t]+)?([\x01-\x08\x0b\x0c\x0e-\x1f\x7f\x21\x23-\x5b\x5d-\x7e\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]|\\[\x01-\x09\x0b\x0c\x0d-\x7f\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))*(([ \t]*\r\n)?[ \t]+)?")@(([a-z\d\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]|[a-z\d\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF][a-z\d\-._~\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]*[a-z\d\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])\.)+([a-z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]|[a-z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF][a-z\d\-._~\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]*[a-z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])\.?$/i;
+    return pattern.test(emailAddress);
+};
+
+// Escape HTML Chars
+function escapeHtml(unsafe) {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+ }

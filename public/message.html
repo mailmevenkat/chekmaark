@@ -5,18 +5,80 @@
       <link rel="shortcut icon" type="image/x-icon" href="images/favicon.ico">
       
       <!-- CSS -->
-      <link rel="stylesheet" type="text/css" href="semantic/dist/semantic.min.css">
+      <link rel="stylesheet" type="text/css" href="semantic/dist/semantic.min.css">   
       
-      <!-- FONTS -->
+      <style>
+          body, html {
+              height: auto;
+          }
+        .chat {
+            width: 100%;
+        }
+        
+        .task {
+              width: 100%;
+        }
+          
+        .chat.tam {
+           margin-top: 100px;
+         }
+          
+        .bubble{
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            display: inline-block;
+            padding: 10px 18px;
+            position: relative;
+            vertical-align: top;
+            width: 50%;
+        }
+
+        .bubble:last-child {
+            margin-bottom: 140px;
+        }
+          
+        .bubble::before {
+            background-color: #f5f5f5;
+            content: "\00a0";
+            display: block;
+            height: 16px;
+            position: absolute;
+            top: 11px;
+            transform:             rotate( 29deg ) skew( -35deg );
+                -moz-transform:    rotate( 29deg ) skew( -35deg );
+                -ms-transform:     rotate( 29deg ) skew( -35deg );
+                -o-transform:      rotate( 29deg ) skew( -35deg );
+                -webkit-transform: rotate( 29deg ) skew( -35deg );
+            width:  20px;
+        }
+
+        .me {
+            float: left; 
+            clear: left;
+            margin: 5px 45px 5px 20px;     
+        }
+
+        .me::before {
+            left: -6px;    
+        }
+
+        .you {
+            float: right;
+            clear: right;
+            margin: 5px 20px 5px 45px;       
+        }
+
+        .you::before {
+            right: -6px;
+        }
+      .gmail_extra {
+          display: none;
+      }
+      </style>
+      
       <!-- FONTS -->
       <link href='https://fonts.googleapis.com/css?family=Poiret+One' rel='stylesheet' type='text/css'>
       <link href='https://fonts.googleapis.com/css?family=Satisfy' rel='stylesheet' type='text/css'>
-      
-      <style>
-          .gmail_extra {
-              display: none;
-          }
-      </style>
       
       <!-- JS -->
       <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
@@ -32,55 +94,251 @@
                 window.location = "index.html";
             } else {
                 $(document).ready(function(){
+                    var selfEmail = getProfile();
+                    if(!selfEmail) {
+                        getProfileFromServer(function(response) {
+                            if(response.hasOwnProperty('emailAddress'))
+                                setProfile(response.emailAddress);
+                                selfEmail = response.emailAddress;
+                        });
+                    }
                     var queryString = (document.URL).split("?");
                     var replyTo = null;
                     var replyCc = null;
+                    var ReplyTo = null;
+                    var from = null;
                     var replySubject = "RE: ";
                     if(queryString.length > 1) {
-                        var thread_id = queryString[1];
+                        var thread_id = queryString[1].split("#")[0];
                         var conversations = $("#conversations");
+                        $("#holder").addClass("active loading");
+                        $("#replyHolder").css("display", "none");
                         getThread(thread_id, function(response) {
                            if(response.hasOwnProperty("messages")) {
                                for(i in response.messages) {
+                                   var j = i;
                                    var message = response.messages[i];
-                                   var body = getBody(message.payload);
-                                   if(i == 0) {
-                                        var subject = getHeader(message.payload.headers, "Subject");
-                                        replySubject += subject;
-                                        console.log("To" , replyTo, "Subject", replySubject, "Cc", replyCc);
-                                        if(isATask(subject)) {
-                                            $("#title").html(subject);
-                                            $("#desc").html(body);
-                                        } else {
-                                            $("#title").html(subject);
-                                        }
-                                   } else {
-                                       conversations.append('<div class="item">' +
-                                               '<div class="content"><div class="description">' + body
-                                                  + '</div> </div> </div>');
+                                   var id = message.id;
+                                   if($.inArray(GMAIL_LABELS.trash, message.labelIds) > -1) {
+                                       if(j == response.messages.length - 1) {
+                                            $("#replyHolder").css("display", "block");
+                                            $("#holder").removeClass("active loading");
+                                       }
+                                       continue; //if trashed, skip the loop
                                    }
                                    
-                                   if(i == response.messages.length - 1) {
+                                   console.log(i, message);
+                                   
+                                   var body = getBody(message.payload);
+                                   from = getHeader(message.payload.headers, 'From');
+                                   ReplyTo = getHeader(message.payload.headers, "Reply-To");
+                                   var to = getHeader(message.payload.headers, 'To');
+                                   var cc = getHeader(message.payload.headers, 'Cc');
+                                   if(cc !== "") {
+                                       cc = "Others participants: " + cc;
+                                   }
+                                   var subject = getHeader(message.payload.headers, "Subject");
+                                   if(from.indexOf('<') > -1) {
+                                       from = from.substring(from.lastIndexOf("<")+1,from.lastIndexOf(">"));
+                                   }
+                                   
+                                   var meOrYou = "you";
+                                   if(from == selfEmail) {
+                                       meOrYou = "me";
+                                   }
+                                   var date = new Date(getHeader(message.payload.headers, "Date")).toDateString();
+                                   if(i == 0 && isATask(subject)) {
+                                            $("#tasky").css("display", "flex");
+                                            $("#holder").css("marginTop", "70px");
+                                            replySubject += subject;
+                                            $("#title").html(subject.replace("#CMK" + parseTaskIdFromSubject(subject), ""));
+                                            $("#desc").html(body);
+                                            $("#assigned-to").html(to);
+                                            $("#assigned-by").html(from);
+                                            $("#conversations").addClass("tam");
+                                       
+                                            var favorite = $.inArray(GMAIL_LABELS.starred, message.labelIds) > -1;
+                                            $("#favorite").addClass(favorite? "yellow": "grey");
+                                            $("#favorite").data("fav", favorite);
+                                            $("#favorite").data("thread", message.threadId);
+                                            
+                                            getTask(parseTaskIdFromSubject(subject), function(object) {
+                                               var duedate = "";
+                                               var objectid = ""
+                                               
+                                               if(object != null) {
+                                                    objectid = object.id;
+                                                    var deadline = object.attributes.deadline;
+                                                    var status = object.attributes.status;
+
+                                                    duedate = getTimeRemaining(deadline);
+                                                   
+                                                    if(status == TASK_STATUS.PENDING && duedate.seconds < 0) { 
+                                                        duedate = "Deadline ended!";
+                                                    } else if(status == TASK_STATUS.PENDING) {
+                                                        if(isNaN(duedate.total)) {
+                                                            duedate = "";
+                                                        } else {
+                                                            duedate = duedate.days + "d " + duedate.hours + " h " + duedate.minutes + "m " + duedate.seconds + "s ";
+                                                        }
+                                                    } else {
+                                                        duedate = "";
+                                                    }
+
+                                                    $("#completed").data("thread", message.threadId);
+                                                    $("#completed").data("object", object.id);
+                                                    if(status == TASK_STATUS.PENDING) {
+                                                        $("#completed").html('<i class="time icon"></i> Pending');
+                                                    } else {
+                                                        $("#completed").addClass("green");
+                                                        $("#completed").html('<i class="checkmark icon"></i> Completed');
+                                                    }
+                                                    if(duedate != "") {
+                                                        $("#deadline").html(duedate);
+                                                    } else {
+                                                        $("#deadline").html(deadline);
+                                                    }
+                                                }
+                                            });
+                                   } else {
+                                        if(j == 0) { 
+                                            $("#tasky").css("display", "block");
+                                            $("#holder").css("marginTop", "0px");
+                                            replySubject += subject;
+                                            $("#title").html(subject);
+                                            $("#compact").remove();
+                                            $("#tasky-segment").removeClass("fixed blue raised");
+                                            $("#tasky-segment").addClass("basic");
+                                            $("#tasky").removeClass("ui rail");
+                                        }
+                                        var deliveredTo = getHeader(message.payload.headers, 'Delivered-To');
+                                        if(to) {
+                                            deliveredTo = to;
+                                        }
+                                        conversations.append('<div class="bubble ' + meOrYou + '"> <div class="ui basic segment"><a class="ui label">to: <span class="detail">' + escapeHtml(deliveredTo) + '</span></a> <article class="content" style= "margin-top: 5px; border-top:1px solid #ddd; overflow: auto; max-width: 100%; box-shadow: 0px 0px 5px #ddd inset; padding: 5px; max-height: 350px;">' + body + '</article><p style="color: #aaa; font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px #f1f1f1 solid;"><span class = "ui label">from: <span class="detail">' + from + '</span></span> | ' + date + ' | <a id="delete" class="ui tiny red label" data-message="'+ id +'">Trash</a></p><p style="color: #aaa; font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px #f1f1f1 solid;">' + cc + '</p>');
+                                   }
+                                   
+                                   if(j == response.messages.length - 1) {
                                         replyTo = getHeader(message.payload.headers, "To");
                                         replyCc = getHeader(message.payload.headers, "Cc");
-                                        console.log("To" , replyTo, "Subject", replySubject, "Cc", replyCc);
+                                        $("#replyHolder").css("display", "block");
+                                        $("#holder").removeClass("active loading");
                                    }
                                }
+                           } else {
+                                $("#holder").removeClass("active loading");
+                                $("#holder").css("marginTop", "0px");
+                                $("#holder").append("<h2 class = 'ui olive header'>The ship is sinking... Nah, just {request: {error: \"invalid request\"}}.</h2>")
+
                            }
                        });
                        
                         $("#reply").click(function(){
                             var message = $("#message").val();
-                            var email = makeEmail(replyTo, replyCc, replySubject, message);
-                            replyMessage(email, thread_id, function(response) {
-                                if(response.hasOwnProperty("threadId")) {
-                                    conversations.append('<div class="item">' +
-                                           '<div class="content"><div class="description">' + message
-                                              + '</div> </div> </div>');
-                                    $("#message").val("");
+                            if(message.length > 0) {
+                                if(ReplyTo) {
+                                    replyTo = ReplyTo;
+                                } else if(from != selfEmail) {
+                                    replyTo = from;
                                 }
-                            });
+                                var email = makeEmail(selfEmail, replyTo, replyCc, replySubject, message);
+                                replyMessage(email, thread_id, function(response) {
+                                    var id = response.id;
+                                    if(response.hasOwnProperty("threadId")) {
+                                        conversations.append('<div class="bubble me"> <div class="ui basic segment"><a class="ui label">to: <span class="details">' + replyTo + '</span></a> <article class="content" style= "margin-top: 5px; border-top:1px solid #ddd; overflow: auto; max-width: 100%; box-shadow: 0px 0px 5px #ddd inset; padding: 5px; max-height: 350px;">' + message + '</article><p style="color: #aaa; font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px #f1f1f1 solid;"><span class="ui label">from: <span class="details">' + selfEmail + '</span></span> | ' + new Date().toDateString() + ' | <a id="delete" class="ui tiny red label" data-message="'+ id +'">Trash</a></p><p style="color: #aaa; font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px #f1f1f1 solid;">' + replyCc + '</p>');
+                                        $("#message").val("");
+                                    }
+                                });
+                            }
                        });
+                       
+                       $("#compact").click(function() {
+                           var compact = $(this).data("compact");
+                           if(compact) {
+                               $("#desc").css("display", "block");
+                               $("#assigned").css("display", "block");
+                               $("#status").css("display", "block");
+                               $(this).data("compact", false);
+                               $(this).html('<i class = "angle up icon"></i> Compact');
+                           } else {
+                               $("#desc").css("display", "none");
+                               $("#assigned").css("display", "none");
+                               $("#status").css("display", "none");
+                               $(this).data("compact", true);
+                               $(this).html('<i class = "angle down icon"></i> Expand');
+                           }
+                       });
+                        
+                        $("#completed").click(function(event) {
+                            var button = $(this);
+                            var thread = button.data("thread");
+                            var objectId = button.data("object");
+                            button.addClass("loading");
+                            getTask(objectId, function(object) {
+                                if(object != null) {
+                                    var status = object.attributes.status;
+                                    if(status == TASK_STATUS.PENDING) {
+                                        completeTask(object, function(object) { 
+                                            modifyThread(thread, [], [GMAIL_LABELS.important], function(response) {
+                                                button.addClass("green");
+                                                $("#completed").html('<i class="checkmark icon"></i> Completed');
+                                                button.removeClass("loading");
+                                            });  
+                                        });
+                                    } else {
+                                        incompleteTask(object, function(object) { 
+                                            modifyThread(thread, [GMAIL_LABELS.important], [], function(response) {
+                                                button.removeClass("green");
+                                                $("#completed").html('<i class="time icon"></i> Pending');
+                                                button.removeClass("loading");
+                                            });  
+                                        });
+                                    }
+                                }     
+                            });
+                        });
+                    
+                        $("#favorite").click(function(event) {
+                            var button = $(this);
+                            var parent = button.parent().parent().parent();
+                            var thread = $(this).data("thread");
+                            var fav = $(this).data("fav");
+                            button.addClass("loading");
+                            if(!fav) {
+                                modifyThread(thread, [GMAIL_LABELS.starred], [], function(response) {
+                                    button.data("fav", true);
+                                    button.addClass("yellow");
+                                    button.removeClass("loading");
+                                });
+                            } else {
+                                modifyThread(thread, [], [GMAIL_LABELS.starred], function(response) {
+                                    button.data("fav", false);
+                                    button.removeClass("yellow");
+                                    button.removeClass("loading");
+                                });
+                            }
+
+                        });
+                        
+                        $(document.body).on("click", "#delete", function(){
+                           var button = $(this);
+                           var message = button.data("message"); 
+                            $('#trashIt')
+                                .modal({
+                                        closable  : false,
+                                        onApprove : function() {
+                                            modifyMessage(message, [GMAIL_LABELS.trash], [GMAIL_LABELS.inbox], function(response){
+                                               if(response.hasOwnProperty("id")) {
+                                                   button.parent().parent().parent().remove();
+                                               } 
+                                            });
+                                        }
+                                       })
+                                .modal('show');
+                        });
+                    } else {
+                        $("#holder").css("marginTop", "0px");
+                        $("#holder").append("<h2 class = 'ui purple header'>The page is found but... bu... b... ...</h2>")
                     }
                 });
             }
@@ -100,17 +358,45 @@
                 <h3 class = "ui header" style="font-family: 'Satisfy', cursive;">by groufye</h3>
             </a>
       </div>
-      <div class="ui padded text container" style="margin-top: 70px;">
-          <h2 class="ui header" id = "title"></h2>
-          <h2 class="ui header" id = "desc"></h2>
-          <div id="conversations" class="ui relaxed divided list">
-                <div class = ""></div>
+      <div class="ui small modal" id="trashIt"> 
+         <i class="close icon"></i>
+        <div class="header">Move to Trash?</div>
+        <div class="content">Are you sure you wanna delete?</div>
+        <div class="actions">
+            <div class="ui cancel button">Nope</div>
+            <button class="ui approve button" type="button">Trash it!</button>
+        </div>
+      </div>
+      <div id = "holder" class="ui basic segment" style="margin-top: 70px; width: 80%; margin-left: 10%;">
+          <div id="tasky" class="ui rail task" style="display: none;">
+              <div id="tasky-segment" class = "ui blue raised fixed top sticky segment" style="margin-top: 70px; overflow: hidden;">
+                  <div class="content">
+                    <a id="compact" data-compact=true class= "ui link" style="cursor: pointer;"><i class="angle down icon"></i> Expand</a>
+                    <h3 class="ui header" id = "title"></h3>
+                    <h5 class="ui header" id = "desc" style="display: none;"></h5>
+                      <div id = "assigned" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px #f1f1f1 solid;">
+                            <p>Assigned to: <span class = "ui pink small label" id = "assigned-to"></span></p>
+                            <p>Assigned by: <span class = "ui orange small label" id = "assigned-by"></span></p>
+                        </div>
+                        <div id="status" style="display: none; margin: 10px 0 30px 0; padding-top: 10px; border-top: 1px #f1f1f1 solid;">
+                            <span id = "deadline" style="float:left;"></span>
+                            <button id = "completed" class = "ui button" style="float:right; font-size: 11px;">
+                            </button>
+                            <button id = "favorite" class = "ui basic button" style="float:right; font-size: 11px;">
+                                <i class="star icon"></i> Favorite
+                            </button>
+                        </div>
+                  </div>
+            </div>
           </div>
-            <div class="ui bound bottom sticky form" style="bottom: 10px; width: 380px;">
+          <div id="conversations" class="ui basic segment chat">
+              
+          </div>
+            <div id = "replyHolder" class="ui form" style="width: 80%; left: 10%; position: fixed; bottom: 0; background: white; display: none;">
               <div class="field">
                 <textarea rows="2" placeholder="Type in a reply..." style="resize:none;" id="message"></textarea>
               </div>
-               <button class="ui green basic button" type="button" id="reply">Reply</button>
+               <button class="ui green basic button" type="button" id="reply" style="margin-bottom: 15px;"><i class="reply icon"></i>Reply</button>
             </div>
       </div>
   </body>

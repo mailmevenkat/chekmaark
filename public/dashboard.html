@@ -5,6 +5,11 @@
       <link rel="shortcut icon" type="image/x-icon" href="images/favicon.ico">
       <!-- CSS -->
       <link rel="stylesheet" type="text/css" href="semantic/dist/semantic.min.css">
+      <style>
+        body, html {
+              height: auto;
+        }
+      </style>
       <!-- FONTS -->
       <link href='https://fonts.googleapis.com/css?family=Poiret+One' rel='stylesheet' type='text/css'>
       <link href='https://fonts.googleapis.com/css?family=Satisfy' rel='stylesheet' type='text/css'>
@@ -24,8 +29,17 @@
                 window.location = "index.html";
             } else {
                 $(document).ready(function(){
+                    var selfEmail = getProfile();
+                    if(!selfEmail) {
+                        getProfileFromServer(function(response) {
+                            if(response.hasOwnProperty('emailAddress'))
+                                setProfile(response.emailAddress);
+                                selfEmail = response.emailAddress;
+                        });
+                    }
                     var today = new Date().toISOString().split('T')[0];
                     document.getElementsByName("task-due-date")[0].setAttribute('min', today);
+                    document.getElementsByName("task-due-date")[0].defaultValue = today;
                     
                     //Filter task
                     $('#filterTask').dropdown({
@@ -35,6 +49,11 @@
                     });
                     
                     function taskFilterer(text) {
+                        if(text == "Pending" && $("#taskList > div#statusPending").length == 0) {
+                            $("#placeHolderTask").css("display", "block");
+                        } else {
+                            $("#placeHolderTask").css("display", "none");
+                        }
                         $('#taskList > div').each(function () {
                             if(text == "All") {
                                 this.style.display = "flex";
@@ -60,7 +79,7 @@
                     // Task helper function
                     function taskListData(threadId, status_type, subject, snippet, favorite, duedate, fromUname, toUname, status_icon, favorite_color, status_completed_color, objectid, status_completed) {
                         var setFav = favorite? "statusFavorite": "";
-                        return '<div class="ui blue card ' + setFav + '" data-thread="' + threadId + '" id = "status' + status_type + '"> <div class="content"><div class="header">' + subject + '</div><div class="meta"><span class="right floated time">' + duedate +'</span></div><div class="description"><p>' + snippet + '</p></div></div><div class="extra content"><div class="meta"><span class="category">Assigned to ' + toUname + '</span><br><span class="category">Assigned by ' + fromUname + '</span></div></div><div class="extra content"><span class="left floated" id="statusShow"><i class="' + status_icon + ' icon"></i>' + status_type + '</span><span class="right floated"><i class="star ' + favorite_color + ' icon" id="favorite" data-thread=' + threadId + ' data-fav=' + favorite + '></i></span></div><div class="ui bottom attached ' + status_completed_color + ' button" id="complete"  data-thread=' + threadId + ' data-object= ' + objectid + '><i class="checkmark icon"></i>' + status_completed + '</div></div>'
+                        return '<div class="ui blue card ' + setFav + '" data-thread="' + threadId + '" id = "status' + status_type + '" style="cursor: pointer;"> <div class="content"><div class="header">' + subject + '</div><div class="meta"><span class="right floated time">' + duedate +'</span></div><div class="description"><p>' + snippet + '</p></div></div><div class="extra content"><div class="meta"><span class="category" style="padding: 5px;">Assigned to <span class="ui small basic label" style= "margin: 10px;">' + toUname + '</span></span><br><span class="category" style="padding: 5px;">Assigned by <span class="ui small basic label">' + fromUname + '</span></span></div></div><div class="extra content"><span class="left floated" id="statusShow"><i class="' + status_icon + ' icon"></i>' + status_type + '</span><span class="right floated"><i class="star ' + favorite_color + ' icon" id="favorite" data-thread=' + threadId + ' data-fav=' + favorite + '></i></span></div><div class="ui bottom attached ' + status_completed_color + ' button" id="complete"  data-thread=' + threadId + ' data-object= ' + objectid + '><i class="checkmark icon"></i>' + status_completed + '</div></div>'
                     }
                     
                     // Add new task
@@ -69,6 +88,10 @@
                        .modal({
                             closable  : false,
                             onApprove : function() {
+                                $("#subLabel").css("display", "none");
+                                $("#descLabel").css("display", "none");
+                                $("#assiLabel").css("display", "none");
+                                $("#ccLabel").css("display", "none");
                                 var form = $("#newTaskForm");
                                 form.addClass("loading");
                                 var subject = $("input[name=task-title]").val();
@@ -77,27 +100,43 @@
                                 var cc = $("input[name=task-cc]").val();
                                 var date = $("input[name=task-due-date]").val();
                                 var duedate  = "";
-                                if(duedate.seconds < 0) { 
-                                    duedate = "Deadline ended!";
-                                } else if(status == TASK_STATUS.PENDING) {
-                                    if(isNaN(duedate.total)) {
-                                        duedate = "";
-                                    } else {
-                                        duedate = duedate.days + "d " + duedate.hours + " h " + duedate.minutes + "m " + duedate.seconds + "s ";
-                                    }
+                                if(subject.length == 0) {
+                                    $("#subLabel").css("display", "block");
+                                    form.removeClass("loading"); 
+                                } else if(message.length == 0) {
+                                    $("#descLabel").css("display", "block");
+                                    form.removeClass("loading"); 
+                                } else if(to.length == 0 || !isValidEmailAddresses(to.split(","))) {
+                                    $("#assiLabel").css("display", "block");
+                                    form.removeClass("loading"); 
+                                } else if(cc.length > 0 && !isValidEmailAddresses(cc.split(","))) {
+                                    $("#ccLabel").css("display", "block");
+                                    form.removeClass("loading"); 
                                 } else {
-                                    duedate = "";
-                                }
-                                createTask(date, function(object) {
-                                    var email = makeEmail(to, cc, subject + " #CMK" + object.id, message);
-                                    sendMessage(email, function(response) {
-                                        modifyThread(response.threadId, [GMAIL_LABELS.important], [], function(response) {
-                                            $("#taskList").prepend(taskListData(response.threadId, TASK_STATUS_NAME[0], subject, message.substring(0, message.length > 100? 100: message.length), false, duedate, "You", to, "time", "", "", object.id, "Complete task"));
-                                            form.removeClass("loading"); 
-                                            $("#addTask").modal('hide');
+                                    if(duedate.seconds < 0) { 
+                                        duedate = "Deadline ended!";
+                                    } else if(status == TASK_STATUS.PENDING) {
+                                        if(isNaN(duedate.total)) {
+                                            duedate = "";
+                                        } else {
+                                            duedate = duedate.days + "d " + duedate.hours + " h " + duedate.minutes + "m " + duedate.seconds + "s ";
+                                        }
+                                    } else {
+                                        duedate = "";
+                                    }
+                                    createTask(date, function(object) {
+                                        subject = escapeHtml(subject);
+                                        var email = makeEmail(selfEmail, to, cc, subject + " #CMK" + object.id, message);
+                                        sendMessage(email, function(response) {
+                                            var threadId = response.threadId;
+                                            modifyThread(threadId, [GMAIL_LABELS.important], [], function(response) {
+                                                $("#taskList").prepend(taskListData(threadId, TASK_STATUS_NAME[0], subject, message.substring(0, message.length > 100? 100: message.length), false, duedate, selfEmail, to, "time", "", "", object.id, "Complete task"));
+                                                form.removeClass("loading"); 
+                                                $("#addTask").modal('hide');
+                                            });
                                         });
                                     });
-                                });
+                                }
                                 return false;
                             }
                           }).modal('show'); 
@@ -105,6 +144,7 @@
                     
                     
                     $(document.body).on("click", "#taskList #complete", function(event) {
+                        event.stopPropagation();
                         var button = $(this);
                         var prev = button.prev();
                         var prevChild = prev.children(".left");
@@ -117,6 +157,7 @@
                                 if(status == TASK_STATUS.PENDING) {
                                     completeTask(object, function(object) { 
                                         modifyThread(thread, [], [GMAIL_LABELS.important], function(response) {
+                                            button.parent().attr("id", "statusCompleted");
                                             button.addClass("green");
                                             prevChild.html('<i class ="checkmark icon"></i> Completed');
                                             button.html('<i class="checkmark icon"></i>Completed</div>');
@@ -126,6 +167,7 @@
                                 } else {
                                     incompleteTask(object, function(object) { 
                                         modifyThread(thread, [GMAIL_LABELS.important], [], function(response) {
+                                            button.parent().attr("id", "statusPending");
                                             button.removeClass("green");
                                             prevChild.html('<i class ="time icon"></i> Pending');
                                             button.html('<i class="checkmark icon"></i>Complete task</div>');
@@ -138,6 +180,7 @@
                     });
                     
                     $(document.body).on("click", "#taskList #favorite", function(event) {
+                        event.stopPropagation();
                         var button = $(this);
                         var parent = button.parent().parent().parent();
                         var thread = $(this).data("thread");
@@ -161,6 +204,10 @@
                             });
                         }
                         
+                    });
+                    
+                    $(document.body).on("click", "#statusCompleted, #statusPending", function(event) {
+                        window.location = "message.html?" + this.dataset.thread; 
                     });
                     
                     setNextPageTokenForThreads(null); //Initiate to false by default
@@ -268,13 +315,12 @@
                                                         } else {
                                                                $("#placeHolderConvo").css("display", "none");
                                                                convoList.append(
-                                                               '<a href = "message.html?' + message.threadId + '" class="item"> <div class="content"> <div class = "header"><div style="width: 50px; height: 50px; border-radius: 50%; border: 1px red solid; color: red; line-height: 50px; text-align: center;float: left;">' + fromFirst + '</div><div style="width: calc(100% - 80px); margin-left: 10px; float: left; overflow: hidden;"><h4 class="ui header" style="height: 30px; line-height: 30px; width: 100%; overflow: hidden">' + fromUname + ': ' + subject + '</h4><p style="height: 20px; line-height: 20px; color: #ccc; font-size: 13px; font-weight: normal; width: 100%; overflow: hidden">' + snippet + '</p></div><div style="width: 20px; float: left;"><i class="angle right icon" style="height: 50px; line-height: 50px;"></i></div></div></div></a>');
+                                                               '<a href = "message.html?' + message.threadId + '" class="item"> <div class="content"> <div class = "header"><div style="width: 50px; height: 50px; border-radius: 50%; border: 2px red solid; color: red; line-height: 50px; text-align: center;float: left;">' + fromFirst + '</div><div style="width: calc(100% - 80px); margin-left: 10px; float: left; overflow: hidden;"><h4 class="ui header" style="height: 30px; line-height: 30px; width: 100%; overflow: hidden">' + fromUname + ': ' + subject + '</h4><p style="height: 20px; line-height: 20px; color: #ccc; font-size: 13px; font-weight: normal; width: 100%; overflow: hidden">' + snippet + '</p></div><div style="width: 20px; float: left;"><i class="angle right icon" style="height: 50px; line-height: 50px;"></i></div></div></div></a>');
                                                            }
                                                            break; //Execute only once
                                                        }
                                                    }
                                                   if(j == threadLength - 1) {
-                                                    console.log("Removing");
                                                     $("#mainContainer").removeClass("loading");
                                                   }
                                                }); 
@@ -422,6 +468,24 @@
                             }
                         }
                       });
+                    
+                    $('#todoAdd').keypress(function (e) {
+                     var key = e.which;
+                     if(key == 13)  // the enter key code
+                      {
+                          var value = $("#todoAdd").val();
+                          addToTodo(todo);
+                          $("#todoAdd").val("");
+                      }
+                    }); 
+                    
+                    if(getTodo()) {
+                        var todo = JSON.parse(getTodo());
+                        for(var i = 0; i < todo.length; i++) {
+                            $("#todoList").prepend('<div class="ui label" style="margin-bottom: 5px; padding: 10px;"><i class="close white icon"></i> <div class = "detail">' + Fix the Bug! + '</div></div>');
+                        }
+                    }
+                    
                 });
             }
         };  
@@ -442,11 +506,14 @@
                   <label>Load more on scroll</label>
                 </div>
             </div>
-            <a class="right item"  target="_blank" href = "https://groufye.com" >
+            <a class="right item"  onclick="$('#todo').sidebar('toggle');">
+                <h3 class = "ui header" style="font-family: 'Poiret One', cursive;">Todo</h3>
+            </a>
+            <a class="item"  target="_blank" href = "https://groufye.com" >
                 <h3 class = "ui header" style="font-family: 'Satisfy', cursive;">by groufye</h3>
             </a>
       </div>
-      <div class="ui modal" id="addTask"> 
+      <div class="ui small modal" id="addTask"> 
          <i class="close icon"></i>
         <div class="header">Add a task</div>
         <div class="content">
@@ -454,18 +521,30 @@
                 <div class="field">
                     <label>Title</label>
                     <input type="text" name="task-title" placeholder="Title for your task">
+                    <div id="subLabel" class="ui red pointing label" style="display: none">
+                        Please enter a title
+                    </div>
                 </div>
                 <div class="field">
                     <label>Description</label>
                     <textarea name="task-desc" placeholder="Description for your task"></textarea>
+                    <div id="descLabel" class="ui red pointing label" style="display: none">
+                        Please enter a description
+                    </div>
                 </div>
                 <div class="field">
                     <label>Assign to</label>
-                    <input type="text" name="task-to" placeholder="Comma separated email(s)">
+                    <input type="text" name="task-to" placeholder="john@doe.com, jamie@dovy.com (comma separated email(s))">
+                    <div id="assiLabel" class="ui red pointing label" style="display: none">
+                        Please enter a valid email address(es)
+                    </div>
                 </div>
                 <div class="field">
                     <label>Team Mates (if any)</label>
                     <input type="text" name="task-cc" placeholder="Team mates email addresses">
+                    <div id="ccLabel" class="ui red pointing label" style="display: none">
+                        Please enter a valid email address(es) or leave blank
+                    </div>
                 </div>
                 <div class="field">
                     <label>Due Date</label>
@@ -478,45 +557,73 @@
              </form>
         </div>
       </div>
-      <div id="top" class="ui padded text container"  style="margin-top: 70px;">
-              <div id = "mainContainer" class="ui basic segment">
-              <h2 class="ui header">Tasks</h2>
-              <div class="ui floating labeled icon dropdown button" id = "filterTask">
-                  <i class="filter icon"></i>
-                  <span class="text">Filter</span>
-                  <div class="menu">
-                    <div class="item">
-                      All
-                    </div>
-                    <div class="item">
-                      Favorite
-                    </div>
-                    <div class="item">
-                      Pending
-                    </div>
-                    <div class="item">
-                      Completed
-                    </div>
+      <div id = "todo" class="ui right sidebar inverted vertical menu">
+          <div class="ui container" style="padding-top: 70px; padding-left: 20px; padding-right: 20px;">
+            <div class="ui form">
+                <input id="todoAdd" type="text" placeholder="Enter todo"></input> 
+            </div>
+            <div id = "todoList" class="ui medium fluid blue labels">
+                <div class="ui label" style="margin-bottom: 5px; padding: 10px;">
+                  <i class="close white icon"></i> <div class = "detail">Fix the Bug!</div>
+                </div>
+                <div class="ui label" style="margin-bottom: 5px; padding: 10px;">
+                  <i class="close white icon"></i> <div class = "detail">Fix the Bug!</div>
+                </div>
+                <div class="ui label" style="margin-bottom: 5px; padding: 10px;">
+                  <i class="close white icon"></i> <div class = "detail">Fix the Bug!</div>
+                </div>
+                <div class="ui label" style="margin-bottom: 5px; padding: 10px;">
+                  <i class="close white icon"></i> <div class = "detail">Fix the Bug!</div>
+                </div>
+            </div>
+          </div>
+      </div>
+      <div class="pusher">
+          <div id="top" class="ui padded text container"  style="margin-top: 70px;">
+                  <div id = "mainContainer" class="ui basic segment">
+                  <h2 class="ui header">Tasks</h2>
+                  <div class="ui floating labeled icon dropdown button" id = "filterTask">
+                      <i class="filter icon"></i>
+                      <span class="text">Filter</span>
+                      <div class="menu">
+                        <div class="item">
+                          All
+                        </div>
+                        <div class="item">
+                          Favorite
+                        </div>
+                        <div class="item">
+                          Pending
+                        </div>
+                        <div class="item">
+                          Completed
+                        </div>
+                      </div>
+                    </div><br>
+                  <p id = "placeholder" class="ui" style="text-align:center;">
+                        Hit <i class="add icon"></i> to create a new task.
+                  </p>
+                  <div id="placeHolderTask" class="ui yellow segment"> 
+                      <span style="color: #aaa">No tasks! Seems like someone has time for vacation!</span>
                   </div>
-                </div><br>
-              <p id = "placeholder" class="ui" style="text-align:center;">
-                    Hit <i class="add icon"></i> to create a new task.
-              </p>
-              <h3 id="placeHolderTask" class="ui header" style="color: black;"> No tasks! Amazing job! :)<br></h3>
-              <div id="taskList" class="ui two cards">
-                
-              </div>
-              <h2 class="ui header">Conversations</h2>
-              <h3 id="placeHolderConvo" class="ui header" style="color: black;"> No convos! Finally something you hoped for! :)<br></h3>
-              <div id="convoList" class="ui relaxed divided list">
 
-              </div>
-                  <button id="load-more" class="ui blue basic button">
-                      Load more
-                  </button>
-              <div style="width: 100%; height: 100px; text-align: center;">
-                    <cite style="color: #70b8ff;"><i class="like icon"></i> Made by Groufye. Have an awesome day!</cite><br><br>
-              </div>
+                  <div id="taskList" class="ui two cards">
+
+                  </div>
+                  <h2 class="ui header">Conversations</h2>
+                      <div id="placeHolderConvo" class="ui green segment"> 
+                          <span style="color: #aaa">No convos! Finally something you hoped for! :)</span>
+                      </div>
+                  <div id="convoList" class="ui relaxed divided list">
+
+                  </div>
+                      <button id="load-more" class="ui blue basic button">
+                          Load more
+                      </button>
+                  <div style="width: 100%; height: 100px; text-align: center;">
+                        <cite style="color: #70b8ff;"><i class="like icon"></i> Made by Groufye. Have an awesome day!</cite><br><br>
+                  </div>
+            </div>
           </div>
           <script>
                         $("#mainContainer").addClass("loading");

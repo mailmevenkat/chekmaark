@@ -32,6 +32,7 @@ var GMAIL_LABELS = {
     personal: "CATEGORY_PERSONAL",
     inbox: "INBOX",
     sent: "SENT",
+    trash: "TRASH",
     important: "IMPORTANT",
     starred: "STARRED"
 }
