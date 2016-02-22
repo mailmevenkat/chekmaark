@@ -39,4 +39,4 @@ var GMAIL_LABELS = {
 
 var USER_ID = 'me';
 
-var THREAD_LIMIT = 5;
+var THREAD_LIMIT = 20;
