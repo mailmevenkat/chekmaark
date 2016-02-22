@@ -496,7 +496,13 @@
                     $(document.body).on("click", "#removeTodo", function(event) {
                         var index = $(this).data("index");
                         removeFromTodo(index);
-                        $(this).parent().remove();
+                        $("#todoList").empty();
+                        if(getTodo()) {
+                        var todo = JSON.parse(getTodo());
+                        for(var i = 0; i < todo.length; i++) {
+                            $("#todoList").prepend('<div class="ui label" style="margin-bottom: 5px; padding: 10px;"><i id ="removeTodo" class="close white icon" data-index="' + i + '"></i> <div class = "detail">' + todo[i] + '</div></div>');
+                        }
+                    }
                     });
                     
                     if(getTodo()) {
