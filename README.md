@@ -9,7 +9,7 @@ This project is for Koding Virtual Hackathon 2016. Chekmaark converts emails int
 
 > Why not Asana?
 
-Asana is cool, yet we need each and every member of the team to own an account in asana.
+Asana is amazing we agree with you, yet each and every member of the team should own an Asana account.
 
 > Why we used GMAIL API?
 
